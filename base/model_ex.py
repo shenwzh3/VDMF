@@ -65,7 +65,7 @@ def build_foward(x,a,layerinfo):
 
     loss = tf.reduce_mean(entropy1+entropy2+KL1+KL2+KL3)
 
-    return loss,w,KL3
+    return loss,w,KL3,mu_w,sigma_w
 
 # build the total loss, including the loss of the two NN and the RMSE of Rij (conjuncted by addition)
 def build_loss(x_user,a_user,x_item,a_item,R):
@@ -74,13 +74,14 @@ def build_loss(x_user,a_user,x_item,a_item,R):
     # for the training of item
     layersize2 = [[hidden_size,latent_size],[hidden_size,latent_size],[hidden_size,latent_size],[latent_size,latent_size],[hidden_size,943],[latent_size,26]]
 
-    loss_user,w_user,KL3_u = build_foward(x_user,a_user,layersize1)
-    loss_item,w_item,KL3_i = build_foward(x_item,a_item,layersize2)
+    loss_user,w_user,KL3_u,mu_user,sigma_user = build_foward(x_user,a_user,layersize1)
+    loss_item,w_item,KL3_i,mu_item,sigma_item = build_foward(x_item,a_item,layersize2)
 
     rate = tf.reduce_sum(w_user * w_item, reduction_indices = 1, keep_dims = True)
 
     # RMSD_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits = rate, labels = R))
-    RMSD = tf.sqrt(tf.reduce_mean(tf.pow(rate - R, 2)))
+    power_fomula = tf.pow(R,2) - 2 * R * mu_user * mu_item + (mu_user * mu_item + tf.exp(sigma_item)) * tf.exp(sigma_user) + mu_user * (tf.pow(mu_item,2) + tf.exp(sigma_item)) * mu_user
+    RMSD = tf.sqrt(tf.reduce_mean(power_fomula))
     rate_sigmoid = tf.nn.sigmoid(rate)
     total_loss = loss_user + loss_item + RMSD
     KL_sum = tf.reduce_mean(KL3_u + KL3_i)
@@ -206,8 +207,8 @@ def model(mode,rate,checkpoint = '999',K = 50):
             x_item = tf.placeholder(tf.float32, shape = [None,943])
             a_item = tf.placeholder(tf.float32, shape = [None,26])
 
-            _,w_user = build_foward(x_user,a_user,[[hidden_size,latent_size],[hidden_size,latent_size],[hidden_size,latent_size],[latent_size,latent_size],[hidden_size,1682],[latent_size,29]])
-            _,w_item = build_foward(x_item,a_item,[[hidden_size,latent_size],[hidden_size,latent_size],[hidden_size,latent_size],[latent_size,latent_size],[hidden_size,943],[latent_size,26]])
+            _,w_user,_,_ = build_foward(x_user,a_user,[[hidden_size,latent_size],[hidden_size,latent_size],[hidden_size,latent_size],[latent_size,latent_size],[hidden_size,1682],[latent_size,29]])
+            _,w_item,_,_ = build_foward(x_item,a_item,[[hidden_size,latent_size],[hidden_size,latent_size],[hidden_size,latent_size],[latent_size,latent_size],[hidden_size,943],[latent_size,26]])
 
             with tf.Session() as sess:
                 saver = tf.train.Saver()
