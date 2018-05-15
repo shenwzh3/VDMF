@@ -1,8 +1,8 @@
 # -*- coding:utf-8 -*-
 import sys
 import getopt
-from model_ex import model
-from read_data_ex import draw_mat
+from base.model_ex import model
+from base.read_data_ex import draw_mat
 
 def main(argv):
     inputfile = ''

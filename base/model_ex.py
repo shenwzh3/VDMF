@@ -171,7 +171,7 @@ def model(mode,rate,checkpoint = '999',K = 50):
 
 
 
-    elif(mode == 'rmse'):
+    elif(mode == 'rmsd'):
         with tf.device('/cpu:0'):
             user_data,user_info,item_data,item_info,r_data = read_data('rmse',rate)
             x_user = tf.placeholder(tf.float32, shape = [None,1682])
